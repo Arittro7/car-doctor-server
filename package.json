@@ -17,5 +17,10 @@
     "express": "^4.21.0",
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.9.0"
+  },
+  "devDependencies": {
+    "@types/cookie-parser": "^1.4.7",
+    "@types/cors": "^2.8.17",
+    "@types/jsonwebtoken": "^9.0.7"
   }
 }
