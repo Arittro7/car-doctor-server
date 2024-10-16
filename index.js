@@ -11,9 +11,26 @@ const port = process.env.PORT || 5000;
 app.use(cors({
   origin: ['http://localhost:5173'],
   credentials: true
-}));
+})); 
 app.use(express.json());
 app.use(cookieParser());
+
+
+// custom middlewares
+const logger = async(req, res, next) => {
+  console.log('Called CMidware', req.hostname, req.originalUrl)
+  next()
+}
+
+const verifyToken =  async(req, res, next) => {
+  const token = req.cookies?.token;
+  if(!token) {
+    return res.status(401).send({ message: 'Unauthorized access' })
+  }
+  
+  next()
+}
+
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.wv413.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
@@ -37,18 +54,28 @@ async function run() {
     const teamCollection = client.db('carDoctor').collection('teams');
 
     // Auth related API
-    app.post('/jwt', async (req, res) => {
+    app.post('/jwt', logger,  async (req, res) => {
       const user = req.body;
       console.log(user);
-      const token = jwt.sign(user, process.env.ACCESS_SECRET_TOKEN, { expiresIn: '1h' })
+      const token  = jwt.sign(user, process.env.ACCESS_SECRET_TOKEN, { expiresIn: '1h' });
       res
-        .cookie('token', token, {
-          httpOnly: true,
-          secure: true,
-          sameSite: 'none'
-        })
-        .send({ success: true })
+      .cookie('token', token, {
+        httpOnly: true,
+        secure: false,
+        // sameSite: 'none'
+      })
+      .send({success: true})
+
     })
+    //   const token = jwt.sign(user, process.env.ACCESS_SECRET_TOKEN, { expiresIn: '1h' })
+    //   res
+    //     .cookie('token', token, {
+    //       httpOnly: true,
+    //       secure: true,
+    //       sameSite: 'none'
+    //     })
+    //     .send({ success: true })
+    // })
 
     // Services related API
     app.get('/services', async (req, res) => {
@@ -90,8 +117,9 @@ async function run() {
 
     // get booking data
     app.get('/bookings', async (req, res) => {
+    // app.get('/bookings', logger, verifyToken, async (req, res) => {
       console.log(req.query.email);
-      console.log('token', req.cookies)
+      console.log('bookingToken', req.cookies.token)
       let query = {}
       if (req.query?.email) {
         query = { email: req.query.email }
