@@ -24,11 +24,22 @@ const logger = async(req, res, next) => {
 
 const verifyToken =  async(req, res, next) => {
   const token = req.cookies?.token;
+  console.log('Value of token in middleware', token);
   if(!token) {
     return res.status(401).send({ message: 'Unauthorized access' })
   }
+  jwt.verify(token, process.env.ACCESS_SECRET_TOKEN, (err, decoded) =>{
+    // If token invalid
+    if(err) {
+      console.log(err);
+      return res.status(403).send({ message: 'Invalid token' })
+    }
+    // if token is valid then it will decoded
+    console.log('Value in the token', decoded);
+    req.user = decoded
+    next()
+  } )
   
-  next()
 }
 
 
@@ -116,10 +127,10 @@ async function run() {
     })
 
     // get booking data
-    app.get('/bookings', async (req, res) => {
+    app.get('/bookings', verifyToken, async (req, res) => {
     // app.get('/bookings', logger, verifyToken, async (req, res) => {
       console.log(req.query.email);
-      console.log('bookingToken', req.cookies.token)
+      console.log('user in the valid token', req.user);
       let query = {}
       if (req.query?.email) {
         query = { email: req.query.email }
